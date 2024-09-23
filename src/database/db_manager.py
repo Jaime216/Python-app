@@ -53,7 +53,7 @@ class db_manager:
     def create_exercise_set( self, exercise_log_id_, set_, repetitions_, weight_, rest_duration_ ):
         self.cursor.executescript( f"INSERT INTO ExerciseSet (exercise_log_id, set_name, repetitions, weight, rest_duration) VALUES ('{exercise_log_id_}','{set_}','{repetitions_}','{weight_}', '{rest_duration_}');" )
 
-    def get_exercise_log( self, date_, user_id_, exercise_name_, muscle_ ) -> bool | dict:
+    def get_exercise_log_by_exercise_name_and_muscle( self, date_, user_id_, exercise_name_, muscle_ ) -> bool | dict:
         try:
             self.cursor.row_factory = sqlite3.Row
             res = self.cursor.execute( f"SELECT * FROM ExerciseLog WHERE date = '{date_}' AND user_id = {user_id_} AND exercise_name = '{exercise_name_}' AND muscle = '{muscle_}'" ).fetchone()
@@ -67,11 +67,27 @@ class db_manager:
         except sqlite3.OperationalError:
             return False
 
+    def get_today_exercise_logs( self, date_ ) -> bool | list[dict]:
+        try:
+            self.cursor.row_factory = sqlite3.Row
+            res = self.cursor.execute( f"SELECT * FROM ExerciseLog WHERE date = '{date_}'" ).fetchall()
+            list_ = []
+            print( res )
+            if res:
+                for r in res:
+                    dictionary = dict()
+                    for index, content in enumerate( r ):
+                        dictionary[r.keys()[index]] = content
+                    list_.append( dictionary )
+                return list_
+            else:
+                return list()
+        except sqlite3.OperationalError:
+            return False
+
     def get_exercise_logs_by_date( self, date_, user_id_ ):
         try:
             exercise_logs = self.cursor.execute( f"SELECT * FROM ExerciseLog WHERE user_id = {user_id_} AND date = '{date_}'" ).fetchall()
-
-            print( exercise_logs )
             editor_view = """
                 1. Inicio
 

@@ -22,7 +22,9 @@ def init_database( main_database: db_manager ) -> dict:
 
 
 def home_inputs_manager( num, date, personal_data: dict = {} ) -> None | bool:
-    match int( num ):
+    if num.isnumeric():
+        num = int( num )
+    match num:
         case 0:
             print( header_view )
         case 1:
@@ -42,73 +44,90 @@ def home_inputs_manager( num, date, personal_data: dict = {} ) -> None | bool:
         case "exit":
             return True
         case _:
-            pass
+            home_inputs_manager( num, date, personal_data )
 
 
 def create_input_manager( date, personal_data: dict = {} ):
     input_str = input( "Introduce un número: " ).strip()
-    if( input_str != "" and re.match( r'[0-9]', input_str ) ):
-        match int( input_str ):
-            case 1:
+    if input_str.isnumeric():
+        input_str = int( input_str )
+    match input_str:
+        case 1:
+            home_inputs_manager( num = "1", date = date )
+        case 2:
+            print( choose_muscle )
+            muscle = input( "Choose one: " ).strip()
+            if muscle != "" and re.match( r'[0-9]', muscle ):
+                muscle = exercise_name_format( muscle, choose_muscle )
+                exercise_name = muscle_input_manager( muscle )
+                connect_database().create_exercise( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
                 home_inputs_manager( num = "1", date = date )
-            case 2:
+        case 3:
+            selected_date = input( "Introduce la fecha (dd/mm/yyyy): " ).strip()
+            if( check_date( selected_date ) ):
                 print( choose_muscle )
                 muscle = input( "Choose one: " ).strip()
                 if muscle != "" and re.match( r'[0-9]', muscle ):
                     muscle = exercise_name_format( muscle, choose_muscle )
                     exercise_name = muscle_input_manager( muscle )
-                    connect_database().create_exercise( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
+                    connect_database().create_exercise( user_id_ = personal_data["id"], date_ = selected_date, muscle_ = muscle, exercise_name_ = exercise_name )
                     home_inputs_manager( num = "1", date = date )
-            case 3:
-                selected_date = input( "Introduce la fecha (dd/mm/yyyy): " ).strip()
-                if( check_date( selected_date ) ):
-                    print( choose_muscle )
-                    muscle = input( "Choose one: " ).strip()
-                    if muscle != "" and re.match( r'[0-9]', muscle ):
-                        muscle = exercise_name_format( muscle, choose_muscle )
-                        exercise_name = muscle_input_manager( muscle )
-                        connect_database().create_exercise( user_id_ = personal_data["id"], date_ = selected_date, muscle_ = muscle, exercise_name_ = exercise_name )
-                        home_inputs_manager( num = "1", date = date )
+        case _:
+            create_input_manager( date, personal_data )
 
 
 def delete_input_manager( date, personal_data: dict = {} ):
     input_str = input( "Introduce un número: " ).strip()
-    if( input_str != "" and re.match( r'[0-9]', input_str ) ):
-        match int( input_str ):
-            case 1:
+    if input_str.isnumeric():
+        input_str = int( input_str )
+    match input_str:
+        case 1:
+            home_inputs_manager( num = "1", date = date )
+        case 2:
+            print( choose_muscle )
+            muscle = input( "Choose one: " ).strip()
+            if muscle != "" and re.match( r'[0-9]', muscle ):
+                muscle = exercise_name_format( muscle, choose_muscle )
+                exercise_name = muscle_input_manager( muscle )
+                db = connect_database()
+                exercise_log = db.get_exercise_log( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
+                print( exercise_log )
+                if type( exercise_log ) == dict: db.delete_exercise( exercise_log_id_ = exercise_log["id"] )
+                else: print( "Ejercicio inexistente" )
                 home_inputs_manager( num = "1", date = date )
-            case 2:
+
+        case 3:
+            selected_date = input( "Introduce la fecha (dd/mm/yyyy): " ).strip()
+            if( check_date( selected_date ) ):
                 print( choose_muscle )
                 muscle = input( "Choose one: " ).strip()
                 if muscle != "" and re.match( r'[0-9]', muscle ):
                     muscle = exercise_name_format( muscle, choose_muscle )
                     exercise_name = muscle_input_manager( muscle )
                     db = connect_database()
-                    exercise_log = db.get_exercise_log( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
+                    exercise_log = db.get_exercise_log( user_id_ = personal_data["id"], date_ = selected_date, muscle_ = muscle, exercise_name_ = exercise_name )
                     print( exercise_log )
                     if type( exercise_log ) == dict: db.delete_exercise( exercise_log_id_ = exercise_log["id"] )
                     else: print( "Ejercicio inexistente" )
                     home_inputs_manager( num = "1", date = date )
-
-            case 3:
-                selected_date = input( "Introduce la fecha (dd/mm/yyyy): " ).strip()
-                if( check_date( selected_date ) ):
-                    print( choose_muscle )
-                    muscle = input( "Choose one: " ).strip()
-                    if muscle != "" and re.match( r'[0-9]', muscle ):
-                        muscle = exercise_name_format( muscle, choose_muscle )
-                        exercise_name = muscle_input_manager( muscle )
-                        db = connect_database()
-                        exercise_log = db.get_exercise_log( user_id_ = personal_data["id"], date_ = selected_date, muscle_ = muscle, exercise_name_ = exercise_name )
-                        print( exercise_log )
-                        if type( exercise_log ) == dict: db.delete_exercise( exercise_log_id_ = exercise_log["id"] )
-                        else: print( "Ejercicio inexistente" )
-                        home_inputs_manager( num = "1", date = date )
+        case _:
+            delete_input_manager( date, personal_data )
 
 
 def show_input_manager():
     print( exercises_show_view )
-    input_str = input( "Introduce a number:" )
+    input_str = input( "Introduce a number:" ).strip()
+    if input_str.isnumeric():
+        input_str = int( input_str )
+    match input_str:
+        case 1:
+            home_inputs_manager( num = "1", date = get_current_date() )
+        case 2:
+            db = connect_database()
+            exercises = db.get_today_exercise_logs( date_ = get_current_date() )
+            print( exercise_format( exercises ) )
+        case _:
+            show_input_manager()
 
 
 def muscle_input_manager( muscle ) -> str | None:
@@ -237,3 +256,17 @@ def exercise_name_format( exercise_number, exercise_env ) -> str:
             return values[5]
         case _:
             return "No exercise found"
+
+
+def exercise_format( list_: list[dict] ):
+    res = ""
+    for exercise in list_:
+        for serie in exercise:
+            pass
+        res += f"""
+                __________________________________________
+                {exercise["exercise_name"]}    rep     peso    Descanso
+                Fecha: {exercise["date"]}
+                __________________________________________
+    """
+    return res

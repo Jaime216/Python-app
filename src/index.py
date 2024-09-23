@@ -28,6 +28,7 @@ else:
      )
 
 # Loop options: open_bool, input and printed
+
 open_bool = True
 input_str: str = ""
 
