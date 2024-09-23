@@ -11,8 +11,7 @@ from src.env_variables.env_variables import header_view, exercise_editor_view, e
     biceps_exercises, triceps_exercises, shoulders_exercises, exercise_delete_view, exercises_show_view
 
 
-def connect_database() -> db_manager:
-    db_path = "./database/db.db"
+def connect_database( db_path ) -> db_manager:
     return db_manager( db_path )
 
 
@@ -28,7 +27,7 @@ def home_inputs_manager( num, date, personal_data: dict = {} ) -> None | bool:
         case 0:
             print( header_view )
         case 1:
-            print( home_view_formater( date ) )
+            print( home_view_formater() )
         case 2:
             print( personal_data_formater( personal_data, date ) )
         case 3:
@@ -89,8 +88,8 @@ def delete_input_manager( date, personal_data: dict = {} ):
             if muscle != "" and re.match( r'[0-9]', muscle ):
                 muscle = exercise_name_format( muscle, choose_muscle )
                 exercise_name = muscle_input_manager( muscle )
-                db = connect_database()
-                exercise_log = db.get_exercise_log( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
+                db = connect_database( "./database/db.db" )
+                exercise_log = db.get_exercise_log_by_exercise_name_and_muscle( user_id_ = personal_data["id"], date_ = date, muscle_ = muscle, exercise_name_ = exercise_name )
                 print( exercise_log )
                 if type( exercise_log ) == dict: db.delete_exercise( exercise_log_id_ = exercise_log["id"] )
                 else: print( "Ejercicio inexistente" )
@@ -114,20 +113,50 @@ def delete_input_manager( date, personal_data: dict = {} ):
             delete_input_manager( date, personal_data )
 
 
-def show_input_manager():
+def show_input_manager( num = "0" ):
     print( exercises_show_view )
     input_str = input( "Introduce a number:" ).strip()
     if input_str.isnumeric():
         input_str = int( input_str )
+    elif num != 0:
+        input_str = num
     match input_str:
         case 1:
             home_inputs_manager( num = "1", date = get_current_date() )
         case 2:
-            db = connect_database()
+            db = connect_database( "./database/db.db" )
             exercises = db.get_today_exercise_logs( date_ = get_current_date() )
+            print( f"""
+                    1. Inicio
+
+                    2. Añadir serie a un ejercicio
+                    """ )
             print( exercise_format( exercises ) )
+            input_ = input( "Introduce un número: " ).strip()
+            if input_.isnumeric():
+                input_ = int( input_ )
+            match input_:
+                case 1:
+                    home_inputs_manager( num = "1", date = get_current_date() )
+                case 2:
+                    exercise_set_manager()
+                case "back":
+                    show_input_manager( 2 )
+                case _:
+                    show_input_manager( 2 )
         case _:
             show_input_manager()
+
+
+def exercise_set_manager():
+    exercise_id = input( "Introduce el id del ejercicio: " ).strip()
+    if exercise_id.isnumeric():
+        db = connect_database( "./database/db.db" )
+        repetitions = input( "Introduce el número de repeticiones: " ).strip()
+        weight = input( "Introduce el peso: " ).strip()
+        rest_duration = input( "Introduce la duración del descanso: " ).strip()
+        db.create_exercise_set( exercise_log_id_ = exercise_id, repetitions_ = repetitions, weight_ = weight, rest_duration_ = rest_duration )
+        show_input_manager( 2 )
 
 
 def muscle_input_manager( muscle ) -> str | None:
@@ -160,9 +189,9 @@ def muscle_input_manager( muscle ) -> str | None:
             print( "No muscle found" )
 
 
-def personal_data_formater( personal_data: dict , date ) -> str:
+def personal_data_formater( personal_data: dict ) -> str:
     return f"""
-Fecha actual: {date}
+Fecha actual: {get_current_date()}
 
                 1. Inicio
 
@@ -175,28 +204,27 @@ Fecha actual: {date}
             """
 
 
-def home_view_formater( date ) -> str:
+def home_view_formater() -> str:
     return f"""
-Fecha actual: {date}
+Fecha actual: {get_current_date()}
 
                 1. Inicio
 
                 2. Datos personales
 
-                3. Ver ejercicios (3) o ejercicio (3,{date})
+                3. Ver ejercicios
 
-                4. Editar ejercicion (4,{date})
+                4. Editar ejercicios
 
-                5. Crear ejercicios (5,{date})
+                5. Crear ejercicios
 
-                6. Borrar ejercicios (6,{date})
+                6. Borrar ejercicios
 
             """
 
 
 def check_date( date_str: str ):
     if re.match( r'^\d{2}/\d{2}/\d{4}', date_str ):
-        print( "here" )
         date_components = date_str.split( '/' )
         if( 
             int( date_components[0] ) <= 31
@@ -261,12 +289,17 @@ def exercise_name_format( exercise_number, exercise_env ) -> str:
 def exercise_format( list_: list[dict] ):
     res = ""
     for exercise in list_:
-        for serie in exercise:
-            pass
+        exercise_sets = connect_database( "./database/db.db" ).get_exercise_set_by_exercise_log_id( exercise["id"] )
+        exercise_set_formated = ""
+        for set_ in exercise_sets:
+            exercise_set_formated += f"""
+                    Serie {set_["set_number"]}     |    {set_["repetitions"]}    |    {set_["weight"]}    |    {set_["rest_duration"]}
+            """
         res += f"""
-                __________________________________________
+                _________________________________________________________
                 {exercise["exercise_name"]}    rep     peso    Descanso
-                Fecha: {exercise["date"]}
-                __________________________________________
+                {exercise_set_formated}
+                Fecha: {exercise["date"]}       id: {exercise["id"]}
+                _________________________________________________________
     """
     return res

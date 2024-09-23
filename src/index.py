@@ -8,7 +8,7 @@ from src.functions.functions import home_inputs_manager, validate_name, \
     get_current_date, connect_database, init_database
 
 # Database options
-main_database = connect_database()
+main_database = connect_database( "./database/db.db" )
 
 # Print header
 home_inputs_manager( 

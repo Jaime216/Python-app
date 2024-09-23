@@ -46,12 +46,12 @@ class db_manager:
         self.cursor.executescript( f"INSERT INTO ExerciseLog (date, muscle, exercise_name, user_id) VALUES ('{date_}','{muscle_}', '{exercise_name_}','{user_id_}');" )
 
     def delete_exercise( self, exercise_log_id_ ):
-        print( exercise_log_id_ )
         self.cursor.executescript( f"DELETE FROM ExerciseSet WHERE exercise_log_id = {exercise_log_id_}" )
         self.cursor.executescript( f"DELETE FROM ExerciseLog WHERE id = {exercise_log_id_}" )
 
-    def create_exercise_set( self, exercise_log_id_, set_, repetitions_, weight_, rest_duration_ ):
-        self.cursor.executescript( f"INSERT INTO ExerciseSet (exercise_log_id, set_name, repetitions, weight, rest_duration) VALUES ('{exercise_log_id_}','{set_}','{repetitions_}','{weight_}', '{rest_duration_}');" )
+    def create_exercise_set( self, exercise_log_id_, repetitions_, weight_, rest_duration_ ):
+        len_ = len( self.get_exercise_set_by_exercise_log_id( 5 ) ) + 1
+        self.cursor.executescript( f"INSERT INTO ExerciseSet (exercise_log_id, set_number, repetitions, weight, rest_duration) VALUES ('{exercise_log_id_}','{len_}','{repetitions_}','{weight_}', '{rest_duration_}');" )
 
     def get_exercise_log_by_exercise_name_and_muscle( self, date_, user_id_, exercise_name_, muscle_ ) -> bool | dict:
         try:
@@ -72,7 +72,6 @@ class db_manager:
             self.cursor.row_factory = sqlite3.Row
             res = self.cursor.execute( f"SELECT * FROM ExerciseLog WHERE date = '{date_}'" ).fetchall()
             list_ = []
-            print( res )
             if res:
                 for r in res:
                     dictionary = dict()
@@ -101,7 +100,6 @@ class db_manager:
             for exercise_log in exercise_logs:
                 exercise_log = dict( exercise_log )
                 exercise_name_str = f' {exercise_log["exercise_name"]}'  # 13 characters
-                print( exercise_log )
                 while( len( exercise_name_str ) < 13 ):
                     exercise_name_str = exercise_name_str + " "
 
@@ -109,7 +107,6 @@ class db_manager:
 
                 sets_str = ""
                 if( set != None ):
-                    print( set )
                     set_str = f'     Serie {exercise_set["set"]} |  {exercise_set["repetitions"]}  |  {exercise_set["weight"]}  |  {exercise_set["rest_duration"]} \n'
                     sets_str += set_str
 
@@ -124,9 +121,20 @@ class db_manager:
         except sqlite3.OperationalError:
             return False
 
-    def get_exercise_set( self, exerercise_log_id_ ):
+    def get_exercise_set_by_exercise_log_id( self, exerercise_log_id_ ):
         try:
-            return self.cursor.execute( f"SELECT * FROM ExerciseSet WHERE exercise_log_id = {exerercise_log_id_}" ).fetchone()
+            self.cursor.row_factory = sqlite3.Row
+            res = self.cursor.execute( f"SELECT * FROM ExerciseSet WHERE exercise_log_id = {exerercise_log_id_}" ).fetchall()
+            list_ = []
+            if res:
+                for r in res:
+                    dictionary = dict()
+                    for index, content in enumerate( r ):
+                        dictionary[r.keys()[index]] = content
+                    list_.append( dictionary )
+                return list_
+            else:
+                return list()
         except sqlite3.OperationalError:
             return False
 
