@@ -35,7 +35,7 @@ def home_inputs_manager( num, date, personal_data: dict = {} ) -> None | bool:
             print( exercise_editor_view )
         case 5:
             print( exercise_creator_view )
-            creator_input_manager( date, personal_data )
+            create_input_manager( date, personal_data )
         case 6:
             print( exercise_delete_view )
             delete_input_manager( date, personal_data )
@@ -45,7 +45,7 @@ def home_inputs_manager( num, date, personal_data: dict = {} ) -> None | bool:
             pass
 
 
-def creator_input_manager( date, personal_data: dict = {} ):
+def create_input_manager( date, personal_data: dict = {} ):
     input_str = input( "Introduce un número: " ).strip()
     if( input_str != "" and re.match( r'[0-9]', input_str ) ):
         match int( input_str ):
